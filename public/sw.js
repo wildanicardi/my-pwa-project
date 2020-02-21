@@ -16,7 +16,7 @@ var urlsToCache = [
   "/src/images/main-image.jpg",
 ];
 // variable cache static dan dynamic
-var CACHE_STATIC_NAME = "static-v30";
+var CACHE_STATIC_NAME = "static-v31";
 var CACHE_DYNAMIC_NAME = "dinamyc-v2";
 
 //memangkas cache
@@ -37,7 +37,7 @@ function isInArray(string, array) {
   var cachePath;
   if (string.indexOf(self.origin) === 0) {
     // permintaan target domain di mana kita melayani halaman dari (yaitu tidak CDN)
-    console.log("matched ", string);
+    // console.log("matched ", string);
     cachePath = string.substring(self.origin.length); // mengambil bagian dari URL setelah domain (misalnya setelah localhost: 8080)
   } else {
     cachePath = string; // menyimpan permintaan penuh (untuk CDNs)
@@ -155,7 +155,7 @@ self.addEventListener("sync", function (event) {
               })
             })
             .then(function (res) {
-              console.log("send data", res);
+              console.log("send data to server", res);
               // menghapus data dari indexed db ketika berhasil d kirim ke serve
               if (res.ok) {
                 res.json()
@@ -171,4 +171,64 @@ self.addEventListener("sync", function (event) {
       })
     );
   }
+});
+
+// event notification click
+
+self.addEventListener("notificationclick", function (event) {
+  var notification = event.notification;
+  var action = event.action;
+  if (action === "confirm") {
+    console.log("confirm was chooosen");
+    notification.close();
+  } else {
+    console.log(action);
+    event.waitUntil(
+      clients.matchAll()
+      .then(function (cls) {
+        var client = cls.find(function (c) {
+          return c.visibility === 'visible';
+        });
+        if (client !== undefined) {
+          client.navigate(notification.data.url);
+          client.focus();
+        } else {
+          clients.openWindow(notification.data.url);
+        }
+        notification.close();
+      })
+    )
+
+  }
+});
+// event notification close
+self.addEventListener("notificationclose", function (event) {
+  console.log("notification close");
+});
+
+// event menerima push jika pada perangkat memiliki subscription yang mengirimkan pesan push
+
+self.addEventListener('push', function (event) {
+  console.log("Push Notification Received", event);
+  var data = {
+    title: "New!",
+    content: "something new happend",
+    openUrl: '/'
+  };
+  if (event.data) {
+    data = JSON.parse(event.data.text());
+  };
+  // data yang akan ditampilkan dalam notification
+  var options = {
+    body: data.content,
+    icon: "/src/images/icons/app-icon-96x96.png",
+    badge: "/src/images/icons/app-icon-96x96.png",
+    data: {
+      url: '/'
+    }
+  };
+  // menampilkan event notification
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
 });

@@ -124,7 +124,7 @@ function senData() {
       })
     })
     .then(function (res) {
-      console.log('send data', res);
+      console.log('send data sync', res);
       updateUI();
     })
 }
